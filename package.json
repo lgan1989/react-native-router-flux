@@ -38,7 +38,6 @@
   ],
   "dependencies": {
     "react-addons-pure-render-mixin": "15.0.2",
-    "react-native-experimental-navigation": "0.26.x",
     "react-native-tabs": "^1.0.9",
     "react-static-container": "1.0.1"
   },
@@ -60,7 +59,7 @@
     "react": "15.0.2",
     "react-addons-test-utils": "15.0.2",
     "react-dom": "15.0.2",
-    "react-native": "0.26.x",
+    "react-native": "0.31.0",
     "react-native-mock": "0.2.0",
     "sinon": "^1.17.3"
   }

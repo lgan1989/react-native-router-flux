@@ -190,7 +190,7 @@ class NavBar extends React.Component {
 
   renderBackButton() {
     const state = this.props.navigationState;
-    const childState = state.children[state.index];
+    const childState = state.routes[state.index];
     const BackButton = (childState.component && childState.component.backButton) || state.backButton
       || childState.backButton;
     const textButtonStyle = [
@@ -444,10 +444,10 @@ class NavBar extends React.Component {
 
   render() {
     let state = this.props.navigationState;
-    let selected = state.children[state.index];
-    while (selected.hasOwnProperty('children')) {
+    let selected = state.routes[state.index];
+    while (selected.hasOwnProperty('routes')) {
       state = selected;
-      selected = selected.children[selected.index];
+      selected = selected.routes[selected.index];
     }
     const navProps = { ...this.props, ...selected };
 
@@ -480,7 +480,7 @@ class NavBar extends React.Component {
           selected.navigationBarStyle,
         ]}
       >
-        {renderTitle ? renderTitle(navProps) : state.children.map(this.renderTitle, this)}
+        {renderTitle ? renderTitle(navProps) : state.routes.map(this.renderTitle, this)}
         {renderBackButton(navProps) || renderLeftButton(navProps)}
         {renderRightButton(navProps)}
       </Animated.View>

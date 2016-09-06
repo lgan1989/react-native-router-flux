@@ -15,19 +15,20 @@ import {
   View,
   StyleSheet,
   Dimensions,
+  Easing,
+  NavigationExperimental
 } from 'react-native';
 
 import TabBar from './TabBar';
 import NavBar from './NavBar';
 import Actions from './Actions';
 import { deepestExplicitValueForKey } from './Util';
-import NavigationExperimental from 'react-native-experimental-navigation';
 import PureRenderMixin from 'react-addons-pure-render-mixin';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 const {
-  AnimatedView: NavigationAnimatedView,
+  Transitioner: NavigationTransitioner,
   Card: NavigationCard,
 } = NavigationExperimental;
 
@@ -117,6 +118,7 @@ export default class DefaultRenderer extends Component {
     this.renderCard = this.renderCard.bind(this);
     this.renderScene = this.renderScene.bind(this);
     this.renderHeader = this.renderHeader.bind(this);
+    this.renderCardAndHeader= this.renderCardAndHeader.bind(this);
   }
 
   getChildContext() {
@@ -145,7 +147,7 @@ export default class DefaultRenderer extends Component {
     if (!navigationState || navigationState.component || navigationState.tabs) {
       return;
     }
-    const scene = navigationState.children[navigationState.index];
+    const scene = navigationState.routes[navigationState.index];
     Actions.focus({ scene });
   }
 
@@ -168,13 +170,13 @@ export default class DefaultRenderer extends Component {
       animation,
       getSceneStyle,
       getPanHandlers,
-    } = props.scene.navigationState;
+    } = props.scene.route;
 
     const state = props.navigationState;
-    const child = state.children[state.index];
-    let selected = state.children[state.index];
-    while (selected.hasOwnProperty('children')) {
-      selected = selected.children[selected.index];
+    const child = state.routes[state.index];
+    let selected = state.routes[state.index];
+    while (selected.hasOwnProperty('routes')) {
+      selected = selected.routes[selected.index];
     }
     let { panHandlers, animationStyle } = selected;
     const isActive = child === selected;
@@ -211,22 +213,29 @@ export default class DefaultRenderer extends Component {
     );
   }
 
+  renderCardAndHeader(props) {
+    return (<View style={{flex:1}}>
+      {this.renderCard(props)}
+      {this.renderHeader(props)}
+      </View>)
+  }
+
   renderScene(/* NavigationSceneRendererProps */ props) {
     return (
       <DefaultRenderer
-        key={props.scene.navigationState.key}
-        onNavigate={props.onNavigate}
-        navigationState={props.scene.navigationState}
+        key={props.scene.route.key}
+        onNavigate={this.props.onNavigate}
+        navigationState={props.scene.route}
       />
     );
   }
 
   renderHeader(/* NavigationSceneRendererProps */ props) {
     const state = props.navigationState;
-    const child = state.children[state.index];
-    let selected = state.children[state.index];
-    while (selected.hasOwnProperty('children')) {
-      selected = selected.children[selected.index];
+    const child = state.routes[state.index];
+    let selected = state.routes[state.index];
+    while (selected.hasOwnProperty('routes')) {
+      selected = selected.routes[selected.index];
     }
     if (child !== selected) {
       // console.log(`SKIPPING renderHeader because ${child.key} !== ${selected.key}`);
@@ -305,22 +314,31 @@ export default class DefaultRenderer extends Component {
     }
 
     const optionals = {};
-    const selected = navigationState.children[navigationState.index];
-    const applyAnimation = selected.applyAnimation || navigationState.applyAnimation;
+    const selected = navigationState.routes[navigationState.index];
+
+    const configureTransition = selected.configureTransition || navigationState.configureTransition;
     const style = selected.style || navigationState.style;
 
-    if (applyAnimation) {
-      optionals.applyAnimation = applyAnimation;
-    } else {
+    function defaultConfigureTransition() {
+      const easing: any = Easing.inOut(Easing.quad);
+      return {
+        duration: 200,
+        easing,
+      };
+    }
+
+    optionals.configureTransition = defaultConfigureTransition;
+    if (configureTransition){
+      options.configureTransition = configureTransition;
+    }
+    else{
       let duration = selected.duration;
+      let easing = selected.easing || navigationState.easing || Easing.inOut(Easing.quad);
       if (duration === null || duration === undefined) duration = navigationState.duration;
       if (duration !== null && duration !== undefined) {
-        optionals.applyAnimation = (pos, navState) => {
-          if (duration === 0) {
-            pos.setValue(navState.index);
-          } else {
-            Animated.timing(pos, { toValue: navState.index, duration }).start();
-          }
+        optionals.configureTransition = (easing) => {
+          duration,
+          easing
         };
       }
     }
@@ -328,11 +346,10 @@ export default class DefaultRenderer extends Component {
     // console.log(`NavigationAnimatedView for ${navigationState.key}`);
 
     return (
-      <NavigationAnimatedView
+      <NavigationTransitioner
         navigationState={navigationState}
         style={[styles.animatedView, style]}
-        renderOverlay={this.renderHeader}
-        renderScene={this.renderCard}
+        render={this.renderCardAndHeader}
         {...optionals}
       />
     );

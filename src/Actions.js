@@ -131,7 +131,7 @@ class Actions {
     const subStates = list.filter(condition);
     list = list.filter(el => !condition(el));
     if (list.length) {
-      res.children = list.map(c => this.iterate(c, res, refs, wrapBy).key);
+      res.routes = list.map(c => this.iterate(c, res, refs, wrapBy).key);
     } else {
       if (!staticProps.onPress) {
         assert(component, `component property is not set for key=${key}`);
@@ -144,7 +144,7 @@ class Actions {
         const inner = { ...res, name: key, key: innerKey,
           sceneKey: innerKey, type: ActionConst.PUSH, parent: res.key };
         refs[innerKey] = inner;
-        res.children = [innerKey];
+        res.routes = [innerKey];
         delete res.component;
       }
       res.index = 0;

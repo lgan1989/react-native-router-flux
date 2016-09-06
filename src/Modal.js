@@ -8,14 +8,14 @@ import DefaultRenderer from './DefaultRenderer';
 
 const propTypes = {
   navigationState: PropTypes.shape({
-    children: PropTypes.array,
+    routes: PropTypes.array,
   }),
   onNavigate: PropTypes.func,
 };
 
 export default function Modal(props: Object) {
-  const children = props.navigationState.children;
-  const state = children[0];
+  const routes= props.navigationState.routes;
+  const state = routes[0];
 
   return (
     <View style={{ flex: 1 }}>
@@ -25,7 +25,7 @@ export default function Modal(props: Object) {
         {...state}
         onNavigate={props.onNavigate}
       />
-      {children.length > 1 && children.map((el, i) => {
+      {routes.length > 1 && routes.map((el, i) => {
         if (i > 0 && el.component) {
           const Component = el.component;
           return <Component key={el.key} {...el} />;

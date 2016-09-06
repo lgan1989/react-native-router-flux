@@ -60,16 +60,16 @@ class TabBar extends Component {
           style={{ flex: 1 }}
           renderScene={this.renderScene}
         />
-        {!hideTabBar && state.children.filter(el => el.icon).length > 0 &&
+        {!hideTabBar && state.routes.filter(el => el.icon).length > 0 &&
           <Tabs
             style={state.tabBarStyle}
             selectedIconStyle={state.tabBarSelectedItemStyle}
             iconStyle={state.tabBarIconContainerStyle}
             onSelect={this.onSelect} {...state}
-            selected={state.children[state.index].sceneKey}
+            selected={state.routes[state.index].sceneKey}
             pressOpacity={this.props.pressOpacity}
           >
-            {state.children.filter(el => el.icon || this.props.tabIcon).map(el => {
+            {state.routes.filter(el => el.icon || this.props.tabIcon).map(el => {
               const Icon = el.icon || this.props.tabIcon;
               return <Icon {...this.props} {...el} />;
             })}

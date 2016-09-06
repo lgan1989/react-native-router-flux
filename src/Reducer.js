@@ -31,15 +31,15 @@ function checkPropertiesEqual(action, lastAction) {
 function resetHistoryStack(child) {
   const newChild = child;
   newChild.index = 0;
-  child.children.map(
+  child.routes.map(
     (el, i) => {
       if (el.initial) {
         newChild.index = i;
         if (!newChild.tabs) {
-          newChild.children = [el];
+          newChild.routes= [el];
         }
       }
-      if (el.children) {
+      if (el.routes) {
         resetHistoryStack(el);
       }
       return newChild;
@@ -47,12 +47,12 @@ function resetHistoryStack(child) {
   );
 }
 
-function refreshTopChild(children, refresh) {
+function refreshTopChild(routes, refresh) {
   if (refresh) {
-    const topChild = children[children.length - 1];
-    return [...children.slice(0, -1), { ...topChild, ...refresh }];
+    const topChild = routes[routes.length - 1];
+    return [...routes.slice(0, -1), { ...topChild, ...refresh }];
   }
-  return children;
+  return routes;
 }
 
 function inject(state, action, props, scenes) {
@@ -60,18 +60,18 @@ function inject(state, action, props, scenes) {
   state.sceneKey === action.key : state.sceneKey === props.parent;
   // console.log("INJECT:", action.key, state.sceneKey, condition);
   if (!condition) {
-    if (state.children) {
-      const res = state.children.map(el => inject(el, action, props, scenes));
+    if (state.routes) {
+      const res = state.routes.map(el => inject(el, action, props, scenes));
       let changed = false;
       let changedIndex = -1;
       for (let i = 0; i < res.length; i++) {
-        if (res[i] !== state.children[i]) {
+        if (res[i] !== state.routes[i]) {
           changed = true;
           changedIndex = i;
           break;
         }
       }
-      return changed ? { ...state, children: res, index: changedIndex } : state;
+      return changed ? { ...state, routes: res, index: changedIndex } : state;
     }
     return state;
   }
@@ -84,7 +84,7 @@ function inject(state, action, props, scenes) {
       return {
         ...state,
         index: targetIndex,
-        children: refreshTopChild(state.children.slice(0, (targetIndex + 1)), action.refresh),
+        routes: refreshTopChild(state.routes.slice(0, (targetIndex + 1)), action.refresh),
       };
     }
 
@@ -117,8 +117,8 @@ function inject(state, action, props, scenes) {
       return {
         ...state,
         index: state.index - popNum,
-        from: state.children[state.children.length - popNum],
-        children: refreshTopChild(state.children.slice(0, -1 * popNum), action.refresh),
+        from: state.routes[state.routes.length - popNum],
+        routes: refreshTopChild(state.routes.slice(0, -1 * popNum), action.refresh),
       };
     }
     case ActionConst.REFRESH:
@@ -134,68 +134,68 @@ function inject(state, action, props, scenes) {
         from: null,
       };
     case ActionConst.PUSH_OR_POP:
-      ind = state.children.findIndex(el => el.sceneKey === action.key);
+      ind = state.routes.findIndex(el => el.sceneKey === action.key);
       if (ind !== -1) {
         return {
           ...state,
           index: ind,
-          from: state.children[state.index],
-          children: refreshTopChild(state.children.slice(0, ind + 1), action.refresh),
+          from: state.routes[state.index],
+          routes: refreshTopChild(state.routes.slice(0, ind + 1), action.refresh),
         };
       }
       return {
         ...state,
         index: state.index + 1,
         from: null,
-        children: [...state.children, getInitialState(props, scenes, state.index + 1, action)],
+        routes: [...state.routes, getInitialState(props, scenes, state.index + 1, action)],
       };
     case ActionConst.PUSH:
-      if (state.children[state.index].sceneKey === action.key && !props.clone
-        && checkPropertiesEqual(action, state.children[state.index])) {
+      if (state.routes[state.index].sceneKey === action.key && !props.clone
+        && checkPropertiesEqual(action, state.routes[state.index])) {
         return state;
       }
       return {
         ...state,
         index: state.index + 1,
         from: null,
-        children: [...state.children, getInitialState(props, scenes, state.index + 1, action)],
+        routes: [...state.routes, getInitialState(props, scenes, state.index + 1, action)],
       };
     case ActionConst.JUMP:
       assert(state.tabs, `Parent=${state.key} is not tab bar, jump action is not valid`);
       ind = -1;
-      state.children.forEach((c, i) => { if (c.sceneKey === action.key) { ind = i; } });
+      state.routes.forEach((c, i) => { if (c.sceneKey === action.key) { ind = i; } });
       assert(ind !== -1, `Cannot find route with key=${action.key} for parent=${state.key}`);
 
       if (action.unmountScenes) {
-        resetHistoryStack(state.children[ind]);
+        resetHistoryStack(state.routes[ind]);
       }
       return { ...state, index: ind };
     case ActionConst.REPLACE:
-      if (state.children[state.index].sceneKey === action.key) {
+      if (state.routes[state.index].sceneKey === action.key) {
         return state;
       }
 
-      state.children[state.children.length - 1] = getInitialState(
+      state.routes[state.routes.length - 1] = getInitialState(
         props,
         scenes,
         state.index,
         action
       );
 
-      return { ...state, children: state.children };
+      return { ...state, routes: state.routes};
     case ActionConst.RESET:
-      if (state.children[state.index].sceneKey === action.key) {
+      if (state.routes[state.index].sceneKey === action.key) {
         return state;
       }
 
-      state.children = state.children.splice(0, 1);
-      state.children[0] = getInitialState(props, scenes, state.index, action);
+      state.routes= state.routes.splice(0, 1);
+      state.routes[0] = getInitialState(props, scenes, state.index, action);
 
       return {
         ...state,
         index: 0,
         from: null,
-        children: state.children,
+        routes: state.routes,
       };
     default:
       return state;
@@ -206,8 +206,8 @@ export function findElement(state, key, type) {
   if ((ActionMap[type] === ActionConst.REFRESH && state.key === key) || state.sceneKey === key) {
     return state;
   }
-  if (state.children) {
-    for (const child of state.children) {
+  if (state.routes) {
+    for (const child of state.routes) {
       const current = findElement(child, key, type);
       if (current) return current;
     }
@@ -216,10 +216,10 @@ export function findElement(state, key, type) {
 }
 
 function getCurrent(state) {
-  if (!state.children) {
+  if (!state.routes) {
     return state;
   }
-  return getCurrent(state.children[state.index]);
+  return getCurrent(state.routes[state.index]);
 }
 
 function update(state, action) {
@@ -296,12 +296,12 @@ function reducer({ initialState, scenes }) {
         let targetIndex = 0;
 
         // target is child of a node
-        if (!targetEl.children) {
+        if (!targetEl.routes) {
           const targetParent = findElement(state, targetEl.parent, action.type);
           assert(targetParent, `Cannot find parent for target ${target}`);
           parent = targetParent.sceneKey;
 
-          targetIndex = targetParent.children.indexOf(targetEl);
+          targetIndex = targetParent.routes.indexOf(targetEl);
           assert(targetIndex > -1, `${target} does not belong to ${targetParent.sceneKey}`);
         }
 
@@ -314,7 +314,7 @@ function reducer({ initialState, scenes }) {
           ActionMap[action.type] === ActionConst.BACK) {
         const parent = action.parent || state.scenes[action.key].parent;
         let el = findElement(state, parent, action.type);
-        while (el.parent && (el.children.length <= 1 || el.tabs)) {
+        while (el.parent && (el.routes.length <= 1 || el.tabs)) {
           el = findElement(state, el.parent, action.type);
           assert(el, `Cannot find element for parent=${el.parent} within current state`);
         }

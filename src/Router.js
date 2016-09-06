@@ -10,8 +10,7 @@ import React, {
   Component,
   PropTypes,
 } from 'react';
-import { BackAndroid } from 'react-native';
-import NavigationExperimental from 'react-native-experimental-navigation';
+import {BackAndroid } from 'react-native';
 
 import Actions, { ActionMap } from './Actions';
 import getInitialState from './State';
@@ -19,10 +18,6 @@ import Reducer, { findElement } from './Reducer';
 import DefaultRenderer from './DefaultRenderer';
 import Scene from './Scene';
 import * as ActionConst from './ActionConst';
-
-const {
-  RootContainer: NavigationRootContainer,
-} = NavigationExperimental;
 
 const propTypes = {
   dispatch: PropTypes.func,
@@ -35,7 +30,7 @@ class Router extends Component {
 
   constructor(props) {
     super(props);
-    this.state = {};
+    this.handleAction = this.handleAction.bind(this);
     this.renderNavigation = this.renderNavigation.bind(this);
     this.handleProps = this.handleProps.bind(this);
     this.handleBackAndroid = this.handleBackAndroid.bind(this);
@@ -117,13 +112,24 @@ class Router extends Component {
         scenes: scenesMap,
       }));
 
-    this.setState({ reducer: routerReducer });
+    this.routerReducer = routerReducer;
+    const action = {type: 'REACT_NATIVE_ROUTER_FLUX_FOCUS'};
+    this.setState(this.routerReducer(initialState, action));
   }
 
-  renderNavigation(navigationState, onNavigate) {
-    if (!navigationState) {
-      return null;
+  handleAction(action) {
+    if (!action){
+      return false;
     }
+    const newState = this.routerReducer(this.state, action);
+    if (newState === this.state){
+      return false;
+    }
+    this.setState(newState);
+    return true;
+  }
+
+  renderNavigation() {
     Actions.get = key => findElement(navigationState, key, ActionConst.REFRESH);
     Actions.callback = props => {
       const constAction = (props.type && ActionMap[props.type] ? ActionMap[props.type] : null);
@@ -134,21 +140,15 @@ class Router extends Component {
           this.props.dispatch(props);
         }
       }
-      return (constAction ? onNavigate({ ...props, type: constAction }) : onNavigate(props));
+      return (constAction ? this.handleAction({ ...props, type: constAction }) : this.handleAction(props));
     };
 
-    return <DefaultRenderer onNavigate={onNavigate} navigationState={navigationState} />;
+    return <DefaultRenderer onNavigate={this.handleAction} navigationState={this.state} />;
   }
 
   render() {
-    if (!this.state.reducer) return null;
-
-    return (
-      <NavigationRootContainer
-        reducer={this.state.reducer}
-        renderNavigation={this.renderNavigation}
-      />
-    );
+    if (!this.state) return false;
+    return this.renderNavigation();
   }
 }
 

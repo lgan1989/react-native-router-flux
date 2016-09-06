@@ -44,7 +44,7 @@ export function getInitialState(
 ) {
   // eslint-disable-next-line no-unused-vars
   const { parent, key, style, type, ...parentProps } = props;
-  if (!route.children) {
+  if (!route.routes) {
     return {
       ...scenes.rootProps,
       ...route,
@@ -55,7 +55,7 @@ export function getInitialState(
   }
   const res = { ...route, ...scenes.rootProps, ...parentProps };
   let index = 0;
-  route.children.forEach((r, i) => {
+  route.routes.forEach((r, i) => {
     assert(scenes[r], `Empty scene for key=${route.key}`);
     if (scenes[r].initial) {
       index = i;
@@ -63,13 +63,15 @@ export function getInitialState(
   });
 
   if (route.tabs) {
-    res.children = route.children.map((r, i) => getInitialState(scenes[r], scenes, i, props));
+    res.routes= route.routes.map((r, i) => getInitialState(scenes[r], scenes, i, props));
     res.index = index;
   } else {
-    res.children = [getInitialState(scenes[route.children[index]], scenes, 0, props)];
+    res.routes= [getInitialState(scenes[route.routes[index]], scenes, 0, props)];
     res.index = 0;
   }
   res.key = `${position}_${res.key}`;
+
+  res.scenes = scenes;
   return res;
 }
 
