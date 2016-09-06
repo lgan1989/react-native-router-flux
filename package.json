@@ -38,7 +38,7 @@
   ],
   "dependencies": {
     "react-addons-pure-render-mixin": "15.0.2",
-    "react-native-tabs": "^1.0.9",
+    "react-native-tabs": "https://github.com/lgan1989/react-native-tabs.git#master",
     "react-static-container": "1.0.1"
   },
   "devDependencies": {
